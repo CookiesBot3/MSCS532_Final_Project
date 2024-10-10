@@ -1,6 +1,7 @@
 import time
 import sys
 import tracemalloc
+import matplotlib.pyplot as plt
 
 
 # Unoptimized recursive Fibonacci function
@@ -50,38 +51,67 @@ def measure_performance(func, n, label):
     current_memory_mb = current / 10 ** 6
     peak_memory_mb = peak / 10 ** 6
 
+    time_taken = end_time - start_time
+
     # Stop tracing memory allocations
     tracemalloc.stop()
 
     # Output performance data
     print(f"\n{label}:")
     print(f"Result: {result}")
-    print(f"Time taken: {(end_time - start_time):.8f} seconds")
-    print(f"Current memory usage: {current_memory_mb:.6f} MB")
-    print(f"Peak memory usage: {peak_memory_mb:.6f} MB")
-
+    print(f"Time taken: {(time_taken):.8f} seconds")
     # Print memoization cache size only for the memoized version
     if label == "Memoized Fibonacci":
         memory_of_memo_dict = sys.getsizeof(func.__defaults__[0])
         print(f"Memory used by memoization cache: {memory_of_memo_dict} bytes")
+    print(f"Current memory usage: {current_memory_mb:.6f} MB")
+    print(f"Peak memory usage: {peak_memory_mb:.6f} MB\n")
+
+
+    return round(time_taken, 6)
+
 
 # Stress testing both functions
-def stress_test(n):
+def stress_test(n, unoptimized_times, memoized_times):
     print(f"Testing Fibonacci for n = {n}")
 
     # Test unoptimized recursive version
     try:
-        measure_performance(fib_recursive, n, "Unoptimized Recursive Fibonacci")
+        unoptimized_times.append(measure_performance(fib_recursive, n, "Unoptimized Recursive Fibonacci"))
     except RecursionError:
         print("Unoptimized Recursive Fibonacci exceeded recursion limit.")
 
     # Test memoized version
-    measure_performance(fib_memoization, n, "Memoized Fibonacci")
+    memoized_times.append(measure_performance(fib_memoization, n, "Memoized Fibonacci"))
 
     # Test Speed version
     measure_performance(fib_speed_calculation, n, "Speed Fibonacci")
 
+def plot_result(n_values, unoptimized_times, memoized_times):
+    # Create the plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(n_values, unoptimized_times, label="Unoptimized Recursive Fibonacci", marker='o')
+    plt.plot(n_values, memoized_times, label="Memoized Fibonacci", marker='o')
+
+    # Adding labels and title
+    plt.title('Time Comparison: Unoptimized Recursive vs Memoized Fibonacci')
+    plt.xlabel('n (Input Size)')
+    plt.ylabel('Time (seconds)')
+    plt.yscale('log')  # Log scale for better comparison since memoized times are much smaller
+    plt.grid(True)
+    plt.legend()
+
+    # Show the plot
+    plt.show()
+
 
 # Run stress test for a large value of n
 if __name__ == "__main__":
-    stress_test(45)  # You can adjust n to stress test further
+    n_values = [10, 20, 30, 35, 40, 45] # Add or delete the n number of fib
+    unoptimized_times = []
+    memoized_times = []
+
+    for n in n_values:
+        stress_test(n, unoptimized_times, memoized_times)  # You can adjust n to stress test further
+
+    plot_result(n_values, unoptimized_times, memoized_times)
